@@ -5,6 +5,7 @@ import can
 import numpy as np
 from rclpy.node import Node
 from canfd_msgs.msg import OpenCyphalMessage
+import argparse
 
 class ROS2CyphalMessageToSocketCAN(Node):
 
@@ -13,7 +14,11 @@ class ROS2CyphalMessageToSocketCAN(Node):
 
     def __init__(self):
         super().__init__('ros2_cyphal_message_to_socketcan')
-        self.bus = can.Bus(channel='vcan0', interface='socketcan', fd=True)
+        parser = argparse.ArgumentParser()
+        parser.add_argument('--channel', default='can0', help="CAN channel to use, example 'can0'.")
+        parser.add_argument('--bitrate', default=1000000, help="SocketCAN bitrate")
+        args = parser.parse_args()
+        self.bus = can.Bus(channel=str(args.channel), interface='socketcan', fd=True)
         self.SubCyphal = self.create_subscription(OpenCyphalMessage, 'CyphalTransmitFrame', self.TransmitROS2CyphalMessageToSocketCAN, 10)
 
     def TransmitROS2CyphalMessageToSocketCAN(self, ReceivedOpenCyphalMessage):
