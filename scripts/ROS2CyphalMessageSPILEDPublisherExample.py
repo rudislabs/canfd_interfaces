@@ -8,9 +8,9 @@ Tested on Ubuntu 22.04 for virtual CAN use. Physical CANFD tested on a NavQPlus
 connected over CAN to an NXP UCANS32K146 connected over SPI to APA102C LEDS.
 uORB message definition of spi_led:
     uint64 timestamp                # time since system start (microseconds)
-    uint16 number_leds              #total number of leds [0,1008]
-    uint8 offset_group              #offset group (multiple of 12) of leds to control [0,84]
-    uint32[12] led_values           #follows spi 32 bit LED schema for apa102
+    uint16 number_leds              #total number of leds [0,1000]
+    uint8 offset_group              #offset group (multiple of 10) of leds to control [0,100]
+    uint32[10] led_values           #follows spi 32 bit LED schema for apa102
 
     # [  PAD 1's  ][ BRIGHT 0:31 ][ BLU 0:255 ][ GRN 0:255 ][ RED 0:255 ]
     # [ 31 ... 29 ][ 28  ...  24 ][ 23 ... 16 ][ 15 ...  8 ][ 7  ...  0 ]
@@ -70,8 +70,11 @@ class ROS2CyphalMessageSPILEDPublisherTest(Node):
 
             
 
-            for OffsetGroup in range(int(np.ceil(self.NumberLeds/12.0))):
-                LedValArray=AllLedValArray[OffsetGroup*12:np.min([(OffsetGroup+1)*12,self.NumberLeds])]
+            for OffsetGroup in range(int(np.ceil(self.NumberLeds/10.0))):
+                LedValArray=AllLedValArray[OffsetGroup*10:np.min([(OffsetGroup+1)*10,self.NumberLeds])]
+                while len(LedValArray) < 10:
+                    np.append(LedValArray, [np.uint32(0)], axis=0)
+
                 msg = OpenCyphalMessage()
                 msg.header.stamp = self.get_clock().now().to_msg()
                 msg.priority = int(4)
@@ -94,20 +97,21 @@ class ROS2CyphalMessageSPILEDPublisherTest(Node):
             DataArray = np.append(DataArray,
                     [np.uint8((TimeSinceInit >> i*8) & 255)], 
                     axis=0)
+        if len(LedValArray) <= 10:
+            for LedVal in LedValArray:
+                DataArray = np.append(DataArray, [
+                            np.uint8((LedVal >> 0xFFFF) & 0xFF), #RED
+                            np.uint8((LedVal >> 0xFF) & 0xFF), #GREEN
+                            np.uint8(LedVal & 0xFF), #BLUE
+                            np.uint8((Brightness & 0x1F) + 0xE0)
+                            ], axis=0)
+        else:
+            print("LedValArray too large, max is 10")
+        
         DataArray = np.append(DataArray,
                             [np.uint8(NumberLeds & 255),
                              np.uint8(NumberLeds >> 8)], axis=0)
         DataArray = np.append(DataArray,[np.uint8(OffsetGroup & 255)], axis=0)
-        if len(LedValArray) <= 12:
-            for LedVal in LedValArray:
-                DataArray = np.append(DataArray, [
-                            np.uint8(LedVal & 0xFF0000), #RED
-                            np.uint8(LedVal & 0x00FF00), #GREEN
-                            np.uint8(LedVal & 0x0000FF), #BLUE
-                            np.uint8((Brightness & 0x1F) + 0xE0)
-                            ], axis=0)
-        else:
-            print("LedValArray too large, max is 12")
         
         while len(DataArray) < 63:
             DataArray = np.append(DataArray, 
