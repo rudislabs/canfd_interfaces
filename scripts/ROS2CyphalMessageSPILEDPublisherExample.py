@@ -100,8 +100,8 @@ class ROS2CyphalMessageSPILEDPublisherTest(Node):
         if len(LedValArray) <= 10:
             for LedVal in LedValArray:
                 DataArray = np.append(DataArray, [
-                            np.uint8((LedVal >> 0xFFFF) & 0xFF), #RED
-                            np.uint8((LedVal >> 0xFF) & 0xFF), #GREEN
+                            np.uint8((LedVal >> 16) & 0xFF), #RED
+                            np.uint8((LedVal >> 8) & 0xFF), #GREEN
                             np.uint8(LedVal & 0xFF), #BLUE
                             np.uint8((Brightness & 0x1F) + 0xE0)
                             ], axis=0)
