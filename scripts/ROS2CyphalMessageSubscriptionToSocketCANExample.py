@@ -48,7 +48,11 @@ class ROS2CyphalMessageToSocketCAN(Node):
         SocketCANData = np.append(SocketCANData,[ReceivedOpenCyphalMessage.crc], axis=0)
         
         SocketCANMessage = can.Message(arbitration_id=ArbitrationID, data=SocketCANData.tolist(), is_fd=True)
-        self.bus.send(SocketCANMessage)
+        try:
+            self.bus.send(SocketCANMessage)
+            print(f"Message sent on {bus.channel_info}")
+        except can.CanError:
+            print("Message NOT sent")
 
 
 if __name__ == '__main__':
