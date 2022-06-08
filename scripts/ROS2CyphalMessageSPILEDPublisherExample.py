@@ -2,6 +2,7 @@ import rclpy
 import numpy as np
 from rclpy.node import Node
 from canfd_msgs.msg import OpenCyphalMessage
+import time
 """ 
 Conversion of a uORB spi_led message in PX4 to OpenCyphal single frame message. 
 Tested on Ubuntu 22.04 for virtual CAN use. Physical CANFD tested on a NavQPlus 
@@ -21,8 +22,8 @@ class ROS2CyphalMessageSPILEDPublisherTest(Node):
     def __init__(self):
         super().__init__('ros2_cyphal_message_spi_led_publisher_test')
 
-        self.hz = 30
-        self.NumberLeds = 50
+        self.hz = 10
+        self.NumberLeds = 6
         self.LoopCounter = 0
         self.BrightnessUpdatePeriodSec = 3
         self.Timer = self.create_timer(1/self.hz, self.Loop)
@@ -60,21 +61,18 @@ class ROS2CyphalMessageSPILEDPublisherTest(Node):
             if self.LoopCounter%int(self.BrightnessUpdatePeriodSec*self.hz) == (int(self.BrightnessUpdatePeriodSec*self.hz)-1):
                 self.Brightness = (self.Brightness+1)%32
 
-            if self.NumberLeds > 1001:
-                self.NumberLeds = 1001
+            if self.NumberLeds > 1000:
+                self.NumberLeds = 1000
             elif self.NumberLeds < 1:
                 self.NumberLeds = 1
             ColorLoop = self.LoopCounter%len(self.RGBSequenceHex)
 
             AllLedValArray=np.hstack((self.RGBSequenceHex[ColorLoop:],self.RGBSequenceHex[:ColorLoop]))[:self.NumberLeds]
 
+            NumberGroups = int(np.ceil(self.NumberLeds/10.0))
             
-
-            for OffsetGroup in range(int(np.ceil(self.NumberLeds/10.0))):
+            for OffsetGroup in range(NumberGroups):
                 LedValArray=AllLedValArray[OffsetGroup*10:np.min([(OffsetGroup+1)*10,self.NumberLeds])]
-                while len(LedValArray) < 10:
-                    np.append(LedValArray, [np.uint32(0)], axis=0)
-
                 msg = OpenCyphalMessage()
                 msg.header.stamp = self.get_clock().now().to_msg()
                 msg.priority = int(4)
@@ -83,6 +81,7 @@ class ROS2CyphalMessageSPILEDPublisherTest(Node):
                 msg.source_node_id = int(96)
                 msg.data = self.ConvertDataSPILED(OffsetGroup, self.NumberLeds, self.Brightness, LedValArray)
                 msg.crc= int(224+(self.CounterCyphalMsg%32))
+                time.sleep(1.0/(4.0*self.hz*NumberGroups))
                 self.PubCyphal.publish(msg)
                 self.CounterCyphalMsg += 1
             self.LoopCounter += 1
@@ -105,6 +104,11 @@ class ROS2CyphalMessageSPILEDPublisherTest(Node):
                             np.uint8(LedVal & 0xFF), #BLUE
                             np.uint8((Brightness & 0x1F) + 0xE0)
                             ], axis=0)
+            if len(LedValArray) < 10: 
+                for NoVal in range(10-len(LedValArray)):
+                    DataArray = np.append(DataArray, [
+                            np.uint8(0),np.uint8(0),np.uint8(0),np.uint8(0)], axis=0)
+
         else:
             print("LedValArray too large, max is 10")
         
