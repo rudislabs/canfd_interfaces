@@ -74,7 +74,7 @@ class ROS2CyphalMessageSPILEDPublisherTest(Node):
                 LedValArray=AllLedValArray[OffsetGroup*12:np.min([(OffsetGroup+1)*12,self.NumberLeds])]
                 msg = OpenCyphalMessage()
                 msg.header.stamp = self.get_clock().now().to_msg()
-                msg.priority = int(3)
+                msg.priority = int(4)
                 msg.is_annonymous = False
                 msg.subject_id = int(501)
                 msg.source_node_id = int(96)
