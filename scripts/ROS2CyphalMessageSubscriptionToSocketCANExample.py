@@ -50,7 +50,7 @@ class ROS2CyphalMessageToSocketCAN(Node):
         SocketCANMessage = can.Message(arbitration_id=ArbitrationID, data=SocketCANData.tolist(), is_fd=True)
         try:
             self.bus.send(SocketCANMessage)
-            print(f"Message sent on {bus.channel_info}")
+            #print(f"Message sent on {bus.channel_info}")
         except can.CanError:
             print("Message NOT sent")
 

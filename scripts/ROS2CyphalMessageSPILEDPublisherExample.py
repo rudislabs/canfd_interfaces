@@ -23,7 +23,7 @@ class ROS2CyphalMessageSPILEDPublisherTest(Node):
         super().__init__('ros2_cyphal_message_spi_led_publisher_test')
 
         self.hz = 10
-        self.NumberLeds = 6
+        self.NumberLeds = 64
         self.LoopCounter = 0
         self.BrightnessUpdatePeriodSec = 3
         self.Timer = self.create_timer(1/self.hz, self.Loop)
