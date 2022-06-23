@@ -17,7 +17,7 @@ uORB message definition of pca_pwm:
 class ROS2CyphalMessagePublisherTest(Node):
 
     def __init__(self):
-        super().__init__('ros2_cyphal_message_publisher_test')
+        super().__init__('ros2_cyphal_message_pca_publisher_test')
         self.TestPeriod = 20000
         self.OnesArray = np.ones((16,), dtype=np.uint16)
         self.InitTime = int(round(self.get_clock().now().nanoseconds/1000.0))
