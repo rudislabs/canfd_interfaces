@@ -23,11 +23,24 @@ class ROS2CyphalMessagePublisherTest(Node):
         self.InitTime = int(round(self.get_clock().now().nanoseconds/1000.0))
         self.CounterCyphalMsg = 0
         self.PubCyphal = self.create_publisher(OpenCyphalMessage, 'CyphalTransmitFrame', 0)
+        self.CmdVelPub = self.create_publisher(Twist, '/cmd_vel', 10)
         self.SubCmdVel = self.create_subscription(Twist, '/cmd_vel', self.PublishPCAPWMValues, 10)
+        bogusCmdVel = Twist()
+        bogusCmdVel.linear.x = 0.0
+        bogusCmdVel.angular.z = 0.0
+        self.CmdVelPub.publish(bogusCmdVel)
 
     def PublishPCAPWMValues(self, ReceivedMsg):
-        VelocitySetpointUS = np.uint16((ReceivedMsg.linear.x * 10) + 1500)
-        TurnSetpointUS = np.uint16((ReceivedMsg.angular.z * 50) + 1500)
+        VelocitySetpointUS = np.uint16((ReceivedMsg.linear.x * 57) + 1500)
+        TurnSetpointUS = np.uint16((ReceivedMsg.angular.z * 150) + 1500)
+        if(VelocitySetpointUS > 1590):
+            VelocitySetpointUS = 1590
+        if(VelocitySetpointUS < 1410):
+            VelocitySetpointUS = 1410
+        if(TurnSetpointUS > 1650):
+            TurnSetpointUS = 1650
+        if(TurnSetpointUS < 1350):
+            TurnSetpointUS = 1350
         TestPulseWidthArray = self.OnesArray*np.uint16(1500)
         TestPulseWidthArray[0] = VelocitySetpointUS
         TestPulseWidthArray[1] = TurnSetpointUS
@@ -41,6 +54,7 @@ class ROS2CyphalMessagePublisherTest(Node):
         msg.data = self.ConvertDataPCAPWM(TestPWMPeriod,TestPulseWidthArray)
         msg.crc= int(224+(self.CounterCyphalMsg%32))
         self.PubCyphal.publish(msg)
+        self.CounterCyphalMsg += 1
     
 
     def ConvertDataPCAPWM(self, PWMPeriod, PulseWidthArray):
